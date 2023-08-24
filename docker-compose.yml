@@ -4,5 +4,9 @@ services:
   service:
     build:
       context: .
+    environment:
+      - DIR_PATH=/myfiles
+    volumes:
+      - ./demo/myfiles:/myfiles
     ports:
       - 80:80
