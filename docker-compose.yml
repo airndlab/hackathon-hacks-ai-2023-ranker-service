@@ -1,0 +1,8 @@
+name: ranker
+
+services:
+  service:
+    build:
+      context: .
+    ports:
+      - 80:80
