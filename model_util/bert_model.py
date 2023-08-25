@@ -5,7 +5,7 @@ import pymorphy3
 import nltk
 import re
 from sklearn.metrics.pairwise import cosine_similarity
-from model_util import model, tokenizer, df, data_vectors
+from model_util import model, tokenizer, df
 
 __max_similarity_documents__ = 9
 
@@ -22,7 +22,7 @@ stop_words = ['и', 'в', 'во', 'не', 'что', 'он', 'на', 'я', 'с', 
 
 def prepare_text(text):
     word_tokenizer = nltk.WordPunctTokenizer()
-    regex = re.compile(r'[А-Яа-яA-zёЁ-]+')
+    regex = re.compile(r'[А-Яа-яA-zёЁ0-9-]+')
     text = " ".join(regex.findall(text)).lower()
     tokens = word_tokenizer.tokenize(text)
     morph = pymorphy3.MorphAnalyzer()
@@ -52,14 +52,12 @@ def get_text_vector(text):
 def __prepare_requet__(request):
     return np.nan_to_num(np.array(get_text_vector(request)))
 
-def find_similarity_documents(request) -> []:
+def find_similarity_documents(request, vectors) -> []:
     results = []
 
-    cosine_similarities = pd.Series(cosine_similarity(__prepare_requet__(request), data_vectors).flatten())
+    cosine_similarities = pd.Series(cosine_similarity(__prepare_requet__(request), vectors).flatten())
 
     for i,j in cosine_similarities.nlargest(__max_similarity_documents__).items():
-        results.append({'weight':str(j), 'doc_id':int(df.id.iloc[i])
-                        #, 'raw_text':df.text.iloc[i]*/
-                        })
+        results.append({'weight':str(j), 'q': df.QUESTION.iloc[i] , 'a':df.ANSWER.iloc[i]})
 
     return results
