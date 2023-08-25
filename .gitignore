@@ -2,3 +2,5 @@
 *.iml
 /.venv
 /model
+/model_util/__pycache__
+*.pyc

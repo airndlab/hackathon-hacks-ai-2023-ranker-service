@@ -3,6 +3,7 @@ from model_util.bert_model import find_similarity_documents
 from model_util import question_vectors, question_and_answer_vectors
 import uvicorn
 from fastapi import FastAPI
+from train import create_and_save_vectors
 
 app = FastAPI()
 
@@ -28,6 +29,13 @@ async def say_hello(question: str):
     #TODO: убрать дубли, в приоритете оставить тип question
 
     return similarities
-    
+
+
+@app.get("/train")
+async def train():
+    # TODO: доделать асинхронный вызов функции построения векторов + добавить логирование !
+    create_and_save_vectors()
+    return "OK"
+
 if __name__ == '__main__':
     uvicorn.run(app, host="0.0.0.0", port=int(8085))
