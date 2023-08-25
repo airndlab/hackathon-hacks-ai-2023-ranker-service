@@ -7,7 +7,8 @@ COPY ./requirements.txt /app/requirements.txt
 RUN /usr/local/bin/python -m pip install --upgrade pip &&\
     pip install -r /app/requirements.txt &&\
     mkdir /app/config &&\
-    mkdir /app/dataset
+    mkdir /app/dataset &&\
+    mkdir /app/model
 
 COPY ./*.py /app/
 COPY ./model_util/*.py /app/model_util/
