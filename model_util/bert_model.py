@@ -11,28 +11,29 @@ from model_util import model, tokenizer, df
 
 __max_similarity_documents__ = 9
 
-stop_words = ['и', 'в', 'во', 'не', 'что', 'он', 'на', 'я', 'с', 'со', 'как', 'а', 'то', 'все', 'она', 'так', 'его',
-              'но', 'да', 'ты', 'к', 'у', 'же', 'вы', 'за', 'бы', 'по', 'только', 'ее', 'мне', 'было', 'вот', 'от',
-              'меня', 'еще', 'нет', 'о', 'из', 'ему', 'теперь', 'когда', 'даже', 'ну', 'вдруг', 'ли', 'если', 'уже',
-              'или', 'ни', 'быть', 'был', 'него', 'до', 'вас', 'нибудь', 'опять', 'уж', 'вам', 'ведь', 'там', 'потом',
-              'себя', 'ничего', 'ей', 'может', 'они', 'тут', 'где', 'есть', 'надо', 'ней', 'для', 'мы', 'тебя', 'их',
-              'чем', 'была', 'сам', 'чтоб', 'без', 'будто', 'чего', 'раз', 'тоже', 'себе', 'под', 'будет', 'ж', 'тогда',
-              'кто', 'этот', 'того', 'потому', 'этого', 'какой', 'совсем', 'ним', 'здесь', 'этом', 'один', 'почти',
-              'мой', 'тем', 'чтобы', 'нее', 'сейчас', 'были', 'куда', 'зачем', 'всех', 'никогда', 'можно', 'при',
-              'наконец', 'два', 'об', 'другой', 'хоть', 'после', 'над', 'больше', 'тот', 'через', 'эти', 'нас', 'про',
-              'всего', 'них', 'какая', 'много', 'разве', 'три', 'эту', 'моя', 'впрочем', 'хорошо', 'свою', 'этой',
-              'перед', 'иногда', 'лучше', 'чуть', 'том', 'нельзя', 'такой', 'им', 'более', 'всегда', 'конечно', 'всю',
-              'между']
-
+stop_words = ['и', 'в', 'во', 'он', 'на', 'я', 'с', 'со', 'а', 'то', 'о']
+#     , 'все', 'она', 'так', 'его',
+#               'но', 'да', 'ты', 'к', 'у', 'же', 'вы', 'за', 'бы', 'по', 'только', 'ее', 'мне', 'было', 'вот', 'от',
+#               'меня', 'еще',  'из', 'ему', 'теперь', 'даже', 'ну', 'вдруг', 'ли', 'если', 'уже',
+#               'или', 'ни', 'быть', 'был', 'него', 'до', 'вас', 'нибудь', 'опять', 'уж', 'вам', 'ведь', 'там', 'потом',
+#               'себя', 'ничего', 'ей', 'может', 'они', 'тут', 'где', 'есть', 'надо', 'ней', 'для', 'мы', 'тебя', 'их',
+#               'чем', 'была', 'сам', 'чтоб', 'без', 'будто', 'чего', 'раз', 'тоже', 'себе', 'под', 'будет', 'ж', 'тогда',
+#               'этот', 'того', 'потому', 'этого',  'совсем', 'ним', 'здесь', 'этом', 'один', 'почти',
+#               'мой', 'тем', 'чтобы', 'нее', 'сейчас', 'были', 'куда', 'зачем', 'всех', 'никогда', 'можно', 'при',
+#               'наконец', 'два', 'об', 'другой', 'хоть', 'после', 'над', 'больше', 'тот', 'через', 'эти', 'нас', 'про',
+#               'всего', 'них', 'какая', 'много', 'разве', 'три', 'эту', 'моя', 'впрочем', 'хорошо', 'свою', 'этой',
+#               'перед', 'иногда', 'лучше', 'чуть', 'том', 'нельзя', 'такой', 'им', 'более', 'всегда', 'конечно', 'всю',
+#               'между']
+# 'не', 'нет', 'кто', 'какой', 'как', 'когда', 'что'
 
 def prepare_text(text):
     word_tokenizer = nltk.WordPunctTokenizer()
-    regex = re.compile(r'[А-Яа-яA-zёЁ0-9-]+')
-    text = " ".join(regex.findall(text)).lower()
+    regex = re.compile(r'[А-Яа-яёЁ0-9-]+')
+    text = " ".join(regex.findall(text))
     tokens = word_tokenizer.tokenize(text)
     morph = pymorphy3.MorphAnalyzer()
     # удаляем стоп-слова, а так же лемитизируем слова
-    tokens = [morph.parse(word)[0].normal_form for word in tokens if (word not in stop_words and not word.isnumeric())]
+    tokens = [morph.parse(word)[0].normal_form.lower().replace('ё', 'е') for word in tokens if (word not in stop_words)]
     return ' '.join(tokens)
 
 
@@ -65,7 +66,17 @@ def find_similarity_documents(request, vectors) -> []:
 
     cosine_similarities = pd.Series(cosine_similarity(__prepare_requet__(request), vectors).flatten())
 
-    for i, j in cosine_similarities.nlargest(__max_similarity_documents__).items():
-        results.append({'id': i, 'weight': str(j), 'q': df.QUESTION.iloc[i], 'a': df.ANSWER.iloc[i]})
+    # если в request есть число фильтруем по вхождению этого числа
+    numbers = re.findall(r'\d+', request)
+    if numbers:
+        for i, j in cosine_similarities.sort_values(ascending=False).items():
+            numbers_in_question = re.findall(r'\d+', df.QUESTION.iloc[i])
+            if all(el in numbers_in_question for el in numbers):
+                results.append({'id': i, 'weight': str(j), 'q': df.QUESTION.iloc[i], 'a': df.ANSWER.iloc[i]})
+            if len(results) >= __max_similarity_documents__:
+                break
+    else:
+        for i, j in cosine_similarities.nlargest(__max_similarity_documents__).items():
+            results.append({'id': i, 'weight': str(j), 'q': df.QUESTION.iloc[i], 'a': df.ANSWER.iloc[i]})
 
     return results

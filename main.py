@@ -18,12 +18,12 @@ def not_duplicate(similarity: dict, similarities: list):
 async def find_similarity(question: str):
     similarities = []
     for similarity in find_similarity_documents(question, question_vectors):
-        if float(similarity['weight']) >= 0.90:
+        if float(similarity['weight']) >= 0.01:
             similarity['type'] = 'question'
             similarities.append(similarity)
 
     for similarity in find_similarity_documents(question, question_and_answer_vectors):
-        if float(similarity['weight']) >= 0.70:
+        if float(similarity['weight']) >= 0.01:
             similarity['type'] = 'question_and_answer'
             if not_duplicate(similarity, similarities):
                 similarities.append(similarity)
