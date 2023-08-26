@@ -1,9 +1,10 @@
 import uvicorn
+import pickle
 from fastapi import FastAPI
 
 from model_util import question_vectors, question_and_answer_vectors
-from model_util.bert_model import find_similarity_documents
-from train import create_and_save_vectors
+from model_util.bert_model import find_similarity_documents, find_similarity_documents_in_services
+from train import create_and_save_vectors, create_and_save_vectors_for_full_data
 
 app = FastAPI(
     title='Ranker API'
@@ -31,10 +32,24 @@ async def find_similarity(question: str):
     return similarities
 
 
+with open("./dataset/services.pkl", "rb") as f:
+    services = pickle.load(f)
+
+@app.get("/find_similarity_in_services")
+async def find_similarity_in_services(question: str):
+    similarities = []
+    for similarity in find_similarity_documents_in_services(question, services):
+        if float(similarity['weight']) >= 0.01:
+            similarity['type'] = 'service'
+            similarities.append(similarity)
+
+    return similarities
+
 @app.get("/train")
 async def train():
     # TODO: доделать асинхронный вызов функции построения векторов + добавить логирование !
     create_and_save_vectors()
+    create_and_save_vectors_for_full_data()
     return "OK"
 
 
